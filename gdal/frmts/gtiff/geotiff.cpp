@@ -12501,7 +12501,9 @@ GDALDataset *GTiffDataset::Open( GDALOpenInfo * poOpenInfo )
     poDS->nCompression = l_nCompression;
 
     // In the case of GDAL_DISABLE_READDIR_ON_OPEN = NO / EMPTY_DIR
-    if( poOpenInfo->AreSiblingFilesLoaded() &&
+    bool lazyLoading = CPLTestBool( CPLGetConfigOption("GDAL_LAZY_GTIFF_LOADING", "NO"));
+
+    if( !lazyLoading && poOpenInfo->AreSiblingFilesLoaded() &&
         CSLCount( poOpenInfo->GetSiblingFiles() ) <= 1 )
     {
         poDS->oOvManager.TransferSiblingFiles( CSLDuplicate(
@@ -14469,6 +14471,8 @@ void GTiffDataset::LoadGeoreferencingAndPamIfNeeded()
     if( !m_bReadGeoTransform && !m_bLoadPam )
         return;
 
+    bool lazyLoading = CPLTestBool(CPLGetConfigOption("GDAL_LAZY_GTIFF_LOADING", "NO"));
+
     IdentifyAuthorizedGeoreferencingSources();
 
 /* -------------------------------------------------------------------- */
@@ -14652,7 +14656,9 @@ void GTiffDataset::LoadGeoreferencingAndPamIfNeeded()
             {
                 char* pszGeorefFilename = nullptr;
 
-                char** papszSiblingFiles = GetSiblingFiles();
+                char** papszSiblingFiles = nullptr;
+                if(!lazyLoading)
+                    papszSiblingFiles = GetSiblingFiles();
 
                 // Begin with .tab since it can also have projection info.
                 const int bTabFileOK =
@@ -14686,7 +14692,9 @@ void GTiffDataset::LoadGeoreferencingAndPamIfNeeded()
             {
                 char* pszGeorefFilename = nullptr;
 
-                char** papszSiblingFiles = GetSiblingFiles();
+                char** papszSiblingFiles = nullptr;
+                if(!lazyLoading)
+                    papszSiblingFiles = GetSiblingFiles();
 
                 bGeoTransformValid = CPL_TO_BOOL( GDALReadWorldFile2(
                                 osFilename, nullptr, adfGeoTransform,
@@ -14778,7 +14786,9 @@ void GTiffDataset::LoadGeoreferencingAndPamIfNeeded()
         // endless sequence of calls.
         m_bLoadPam = false;
 
-        TryLoadXML( GetSiblingFiles() );
+        if(!lazyLoading)
+            TryLoadXML( GetSiblingFiles() );
+
         ApplyPamInfo();
 
         bColorProfileMetadataChanged = false;
@@ -18637,39 +18647,43 @@ void GTiffDataset::LoadEXIFMetadata()
 /************************************************************************/
 void GTiffDataset::LoadMetadata()
 {
-    if( bIMDRPCMetadataLoaded )
+    if (bIMDRPCMetadataLoaded)
         return;
     bIMDRPCMetadataLoaded = true;
 
-    GDALMDReaderManager mdreadermanager;
-    GDALMDReaderBase* mdreader =
-        mdreadermanager.GetReader(osFilename,
-                                  oOvManager.GetSiblingFiles(), MDR_ANY);
+    bool lazyLoading = CPLTestBool(CPLGetConfigOption("GDAL_LAZY_GTIFF_LOADING", "NO"));
 
-    if( nullptr != mdreader )
+    if (!lazyLoading)
     {
-        mdreader->FillMetadata(&oGTiffMDMD);
+        GDALMDReaderManager mdreadermanager;
+        GDALMDReaderBase* mdreader =
+            mdreadermanager.GetReader(osFilename,
+                oOvManager.GetSiblingFiles(), MDR_ANY);
 
-        if(mdreader->GetMetadataDomain(MD_DOMAIN_RPC) == nullptr)
+        if (nullptr != mdreader)
         {
-            char** papszRPCMD = GTiffDatasetReadRPCTag(hTIFF);
-            if( papszRPCMD )
+            mdreader->FillMetadata(&oGTiffMDMD);
+
+            if (mdreader->GetMetadataDomain(MD_DOMAIN_RPC) == nullptr)
             {
-                oGTiffMDMD.SetMetadata( papszRPCMD, MD_DOMAIN_RPC );
-                CSLDestroy( papszRPCMD );
+                char** papszRPCMD = GTiffDatasetReadRPCTag(hTIFF);
+                if (papszRPCMD)
+                {
+                    oGTiffMDMD.SetMetadata(papszRPCMD, MD_DOMAIN_RPC);
+                    CSLDestroy(papszRPCMD);
+                }
             }
-        }
 
-        papszMetadataFiles = mdreader->GetMetadataFiles();
-    }
-    else
-    {
-        char** papszRPCMD = GTiffDatasetReadRPCTag(hTIFF);
-        if( papszRPCMD )
-        {
-            oGTiffMDMD.SetMetadata( papszRPCMD, MD_DOMAIN_RPC );
-            CSLDestroy( papszRPCMD );
+            papszMetadataFiles = mdreader->GetMetadataFiles();
+            return;
         }
+    }
+
+    char** papszRPCMD = GTiffDatasetReadRPCTag(hTIFF);
+    if (papszRPCMD)
+    {
+        oGTiffMDMD.SetMetadata(papszRPCMD, MD_DOMAIN_RPC);
+        CSLDestroy(papszRPCMD);
     }
 }
 

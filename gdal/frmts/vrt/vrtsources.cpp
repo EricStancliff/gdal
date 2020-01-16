@@ -960,11 +960,13 @@ VRTSimpleSource::GetSrcDstWindow( int nXOff, int nYOff, int nXSize, int nYSize,
                                   int *pnOutXSize, int *pnOutYSize )
 
 {
-    if( m_dfSrcXSize == 0.0 || m_dfSrcYSize == 0.0 ||
-        m_dfDstXSize == 0.0 || m_dfDstYSize == 0.0 )
-    {
-        return FALSE;
-    }
+    //if( m_dfSrcXSize == 0.0 || m_dfSrcYSize == 0.0 ||
+    //    m_dfDstXSize == 0.0 || m_dfDstYSize == 0.0 )
+    //{
+    //    return FALSE;
+    //}
+    if (!m_dfSrcXSize || !m_dfSrcYSize || !m_dfDstXSize || !m_dfDstYSize)
+        return 0;
 
     const bool bDstWinSet = m_dfDstXOff != -1 || m_dfDstXSize != -1
         || m_dfDstYOff != -1 || m_dfDstYSize != -1;
