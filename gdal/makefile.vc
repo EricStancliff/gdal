@@ -77,7 +77,7 @@ CLEAN_MAIN_BUILD_OUTPUT_CMDS = \
 if exist gdal.lib del gdal.lib^
 if exist $(GDAL_DLL) del $(GDAL_DLL)^
 if exist $(GDAL_DLL).manifest del $(GDAL_DLL).manifest^
-if exist gdal_i.lib del gdal_i.*^
+if exist gdal_iR64.lib del gdal_i.*^
 if exist *.ilk del *.ilk
 
 staticlib:	$(LIB_DEPENDS)
@@ -197,7 +197,7 @@ $(CLEAN_MAIN_BUILD_OUTPUT_CMDS)
 <<
 	link /nologo /dll $(OGR_INCLUDE) $(BASE_INCLUDE) $(LIBOBJ) \
 		$(EXTERNAL_LIBS) gcore\Version.res \
-		 /out:$(GDAL_DLL) /implib:gdal_i.lib $(LINKER_FLAGS)
+		 /out:$(GDAL_DLL) /implib:gdal_iR64.lib $(LINKER_FLAGS)
 	if exist $(GDAL_DLL).manifest mt -manifest $(GDAL_DLL).manifest -outputresource:$(GDAL_DLL);2
 
 dll:	$(GDAL_DLL)

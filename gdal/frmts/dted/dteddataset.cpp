@@ -463,30 +463,36 @@ GDALDataset *DTEDDataset::Open( GDALOpenInfo * poOpenInfo )
 /*      Initialize any PAM information.                                 */
 /* -------------------------------------------------------------------- */
     poDS->SetDescription( poOpenInfo->pszFilename );
-    poDS->TryLoadXML( poOpenInfo->GetSiblingFiles() );
 
-    // if no SR in xml, try aux
-    const char* pszPrj = poDS->GDALPamDataset::_GetProjectionRef();
-    if( !pszPrj || strlen(pszPrj) == 0 )
+    bool lazyLoading = CPLTestBool(CPLGetConfigOption("GDAL_LAZY_DTED_LOADING", "NO"));
+
+    if (!lazyLoading)
     {
-        int bTryAux = TRUE;
-        if( poOpenInfo->GetSiblingFiles() != nullptr &&
-            CSLFindString(poOpenInfo->GetSiblingFiles(), CPLResetExtension(CPLGetFilename(poOpenInfo->pszFilename), "aux")) < 0 &&
-            CSLFindString(poOpenInfo->GetSiblingFiles(), CPLSPrintf("%s.aux", CPLGetFilename(poOpenInfo->pszFilename))) < 0 )
-            bTryAux = FALSE;
-        if( bTryAux )
-        {
-            GDALDataset* poAuxDS = GDALFindAssociatedAuxFile( poOpenInfo->pszFilename, GA_ReadOnly, poDS );
-            if( poAuxDS )
-            {
-                pszPrj = poAuxDS->GetProjectionRef();
-                if( pszPrj && strlen(pszPrj) > 0 )
-                {
-                    CPLFree( poDS->pszProjection );
-                    poDS->pszProjection = CPLStrdup(pszPrj);
-                }
+        poDS->TryLoadXML(poOpenInfo->GetSiblingFiles());
 
-                GDALClose( poAuxDS );
+        // if no SR in xml, try aux
+        const char* pszPrj = poDS->GDALPamDataset::_GetProjectionRef();
+        if (!pszPrj || strlen(pszPrj) == 0)
+        {
+            int bTryAux = TRUE;
+            if (poOpenInfo->GetSiblingFiles() != nullptr &&
+                CSLFindString(poOpenInfo->GetSiblingFiles(), CPLResetExtension(CPLGetFilename(poOpenInfo->pszFilename), "aux")) < 0 &&
+                CSLFindString(poOpenInfo->GetSiblingFiles(), CPLSPrintf("%s.aux", CPLGetFilename(poOpenInfo->pszFilename))) < 0)
+                bTryAux = FALSE;
+            if (bTryAux)
+            {
+                GDALDataset* poAuxDS = GDALFindAssociatedAuxFile(poOpenInfo->pszFilename, GA_ReadOnly, poDS);
+                if (poAuxDS)
+                {
+                    pszPrj = poAuxDS->GetProjectionRef();
+                    if (pszPrj && strlen(pszPrj) > 0)
+                    {
+                        CPLFree(poDS->pszProjection);
+                        poDS->pszProjection = CPLStrdup(pszPrj);
+                    }
+
+                    GDALClose(poAuxDS);
+                }
             }
         }
     }
@@ -494,8 +500,13 @@ GDALDataset *DTEDDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Support overviews.                                              */
 /* -------------------------------------------------------------------- */
-    poDS->oOvManager.Initialize( poDS, poOpenInfo->pszFilename,
-                                 poOpenInfo->GetSiblingFiles() );
+    if(lazyLoading)
+        poDS->oOvManager.Initialize( poDS, poOpenInfo->pszFilename,
+                                 nullptr );
+    else
+        poDS->oOvManager.Initialize(poDS, poOpenInfo->pszFilename,
+            poOpenInfo->GetSiblingFiles());
+
     return poDS;
 }
 

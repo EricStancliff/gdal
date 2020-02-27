@@ -37,7 +37,7 @@ GDAL_SUPPORT = \
 # END OF CONFIGURATION
 #############################################################################
 
-GDAL_LIB = $(GDAL_ROOT)\gdal_i.lib
+GDAL_LIB = $(GDAL_ROOT)\gdal_iR64.lib
 
 INCLUDE_DIR = \
     -I. \

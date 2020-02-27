@@ -54,7 +54,7 @@ MSVC_VER=1900
 # But the paths *should* be absolute (relative paths mess up in submakefiles).
 
 !IFNDEF GDAL_HOME
-GDAL_HOME = "C:\warmerda\bld"
+GDAL_HOME = "C:\My_Work\external\External\gdal\gdal3.0.3.special\v140-x64"
 !ENDIF
 !IFNDEF BINDIR
 BINDIR = "$(GDAL_HOME)\bin"
@@ -126,7 +126,8 @@ GDAL_PDB = $(GDAL_ROOT)\gdal$(VERSION).pdb
 !ENDIF
 
 !IFDEF WITH_PDB
-CXX_PDB_FLAGS=/Zi /Fd$(GDAL_PDB)
+LDEBUG= /DEBUG
+CXX_PDB_FLAGS= /Zi /Fd$(GDAL_PDB)
 !ELSE
 CXX_PDB_FLAGS=
 !ENDIF
@@ -188,7 +189,7 @@ LDEBUG= /debug /opt:ref /opt:icf
 # Uncomment the following if you are building for 64-bit windows
 # (x64). You'll need to have PATH, INCLUDE and LIB set up for 64-bit
 # compiles.
-#WIN64=YES
+WIN64=YES
 # Capture WIN64=1 if specified in NMAKE command line
 !IFDEF WIN64
 WIN64=YES
@@ -235,8 +236,8 @@ INCLUDE_GNM_FRMTS = YES
 #SETARGV =	"D:\Software\VStudio\VC98\lib\setargv.obj"
 
 # PROJ stuff (required dependency: PROJ >= 6)
-#PROJ_INCLUDE = -Id:\install-proj\local\include
-#PROJ_LIBRARY = d:\install-proj\local\lib\proj_6_0.lib
+PROJ_INCLUDE = -IC:\My_Work\external\External\proj4\proj-6.3.0\v140-x64\include
+PROJ_LIBRARY = C:\My_Work\external\External\proj4\proj-6.3.0\v140-x64\lib\proj.lib
 
 # Uncomment to build with libiconv library to support extended character
 # recoding capabilities. GDAL's internal stub implementation supports
@@ -803,7 +804,7 @@ HAVE_LERC=1
 # Location of MS Data Access SDK (not really needed anymore I think)
 #MSDASDK =	D:\Software\MDAC_2.6
 
-GDAL_DLL =	gdal$(VERSION).dll
+GDAL_DLL =	gdalR64.dll
 
 INC	=	-I$(GDAL_ROOT)\port -I$(GDAL_ROOT)\ogr -I$(GDAL_ROOT)\gcore \
 		-I$(GDAL_ROOT)\alg -I$(GDAL_ROOT)\ogr\ogrsf_frmts  -I$(GDAL_ROOT)\gnm -I$(GDAL_ROOT)\gnm\gnm_frmts -I$(GDAL_ROOT)\apps
@@ -840,7 +841,7 @@ INSTALL	=	xcopy /y /r /d /f /I
 CPLLIB	=    $(GDAL_ROOT)/port/cpl.lib
 
 !IF "$(DLLBUILD)" == "1"
-GDALLIB	=    $(GDAL_ROOT)/gdal_i.lib
+GDALLIB	=    $(GDAL_ROOT)/gdal_iR64.lib
 !ELSE
 GDALLIB	=    $(GDAL_ROOT)/gdal.lib
 !ENDIF
